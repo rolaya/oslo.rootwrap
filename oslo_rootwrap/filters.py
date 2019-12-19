@@ -17,10 +17,13 @@ import os
 import re
 import shutil
 import sys
+import logging
+from oslo_rootwrap import log_utils
 
 NETNS_VARS = ('net', 'netn', 'netns')
 EXEC_VARS = ('e', 'ex', 'exe', 'exec')
 
+LOG = logging.getLogger(__name__)
 
 if sys.platform != 'win32':
     # NOTE(claudiub): pwd is a Linux-specific library, and currently there is
@@ -29,14 +32,17 @@ if sys.platform != 'win32':
 
 
 def _getuid(user):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Return uid for user."""
     return pwd.getpwnam(user).pw_uid
 
 
 class CommandFilter(object):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Command filter only checking that the 1st argument matches exec_path."""
 
     def __init__(self, exec_path, run_as, *args):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         self.name = ''
         self.exec_path = exec_path
         self.run_as = run_as
@@ -44,6 +50,7 @@ class CommandFilter(object):
         self.real_exec = None
 
     def get_exec(self, exec_dirs=None):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         """Returns existing executable, or empty string if none found."""
         exec_dirs = exec_dirs or []
         if self.real_exec is not None:
@@ -60,29 +67,35 @@ class CommandFilter(object):
         return self.real_exec
 
     def match(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         """Only check that the first argument (command) matches exec_path."""
         return userargs and os.path.basename(self.exec_path) == userargs[0]
 
     def preexec(self):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         """Setuid in subprocess right before command is invoked."""
         if self.run_as != 'root':
             os.setuid(_getuid(self.run_as))
 
     def get_command(self, userargs, exec_dirs=None):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         """Returns command to execute."""
         exec_dirs = exec_dirs or []
         to_exec = self.get_exec(exec_dirs=exec_dirs) or self.exec_path
         return [to_exec] + userargs[1:]
 
     def get_environment(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         """Returns specific environment to set, None if none."""
         return None
 
 
 class RegExpFilter(CommandFilter):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Command filter doing regexp matching for every argument."""
 
     def match(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         # Early skip if command or number of args don't match
         if (not userargs or len(self.args) != len(userargs)):
             # DENY: argument numbers don't match
@@ -101,6 +114,7 @@ class RegExpFilter(CommandFilter):
 
 
 class PathFilter(CommandFilter):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Command filter checking that path arguments are within given dirs
 
         One can specify the following constraints for command arguments:
@@ -115,6 +129,7 @@ class PathFilter(CommandFilter):
     """
 
     def match(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         if not userargs or len(userargs) < 2:
             return False
 
@@ -139,6 +154,7 @@ class PathFilter(CommandFilter):
                 paths_are_within_base_dirs)
 
     def get_command(self, userargs, exec_dirs=None):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         exec_dirs = exec_dirs or []
         command, arguments = userargs[0], userargs[1:]
 
@@ -151,6 +167,7 @@ class PathFilter(CommandFilter):
 
 
 class KillFilter(CommandFilter):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Specific filter for the kill calls.
 
        1st argument is the user to run /bin/kill under
@@ -163,10 +180,12 @@ class KillFilter(CommandFilter):
     """
 
     def __init__(self, *args):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         super(KillFilter, self).__init__("/bin/kill", *args)
 
     @staticmethod
     def _program_path(command):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         """Try to determine the full path for command.
 
         Return command if the full path cannot be found.
@@ -188,6 +207,7 @@ class KillFilter(CommandFilter):
         return command
 
     def _program(self, pid):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         """Determine the program associated with pid"""
 
         try:
@@ -228,6 +248,7 @@ class KillFilter(CommandFilter):
             return None
 
     def match(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         if not userargs or userargs[0] != "kill":
             return False
         args = list(userargs)
@@ -261,20 +282,25 @@ class KillFilter(CommandFilter):
 
 
 class ReadFileFilter(CommandFilter):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Specific filter for the utils.read_file_as_root call."""
 
     def __init__(self, file_path, *args):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         self.file_path = file_path
         super(ReadFileFilter, self).__init__("/bin/cat", "root", *args)
 
     def match(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         return (userargs == ['cat', self.file_path])
 
 
 class IpFilter(CommandFilter):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Specific filter for the ip utility to that does not match exec."""
 
     def match(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         if userargs[0] == 'ip':
             # Avoid the 'netns exec' command here
             for a, b in zip(userargs[1:], userargs[2:]):
@@ -285,6 +311,7 @@ class IpFilter(CommandFilter):
 
 
 class EnvFilter(CommandFilter):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Specific filter for the env utility.
 
     Behaves like CommandFilter, except that it handles
@@ -292,6 +319,7 @@ class EnvFilter(CommandFilter):
     """
 
     def _extract_env(self, arglist):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         """Extract all leading NAME=VALUE arguments from arglist."""
 
         envs = set()
@@ -302,6 +330,7 @@ class EnvFilter(CommandFilter):
         return envs
 
     def __init__(self, exec_path, run_as, *args):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         super(EnvFilter, self).__init__(exec_path, run_as, *args)
 
         env_list = self._extract_env(self.args)
@@ -311,6 +340,7 @@ class EnvFilter(CommandFilter):
             self.exec_path = self.args[len(env_list)]
 
     def match(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         # ignore leading 'env'
         if userargs[0] == 'env':
             userargs.pop(0)
@@ -329,6 +359,7 @@ class EnvFilter(CommandFilter):
                 len(filter_envs) and user_envs == filter_envs)
 
     def exec_args(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         args = userargs[:]
 
         # ignore leading 'env'
@@ -342,10 +373,12 @@ class EnvFilter(CommandFilter):
         return args
 
     def get_command(self, userargs, exec_dirs=[]):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         to_exec = self.get_exec(exec_dirs=exec_dirs) or self.exec_path
         return [to_exec] + self.exec_args(userargs)[1:]
 
     def get_environment(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         env = os.environ.copy()
 
         # ignore leading 'env'
@@ -364,14 +397,18 @@ class EnvFilter(CommandFilter):
 
 
 class ChainingFilter(CommandFilter):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     def exec_args(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         return []
 
 
 class IpNetnsExecFilter(ChainingFilter):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Specific filter for the ip utility to that does match exec."""
 
     def match(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         # Network namespaces currently require root
         # require <ns> argument
         if self.run_as != "root" or len(userargs) < 4:
@@ -381,6 +418,7 @@ class IpNetnsExecFilter(ChainingFilter):
                 userargs[2] in EXEC_VARS)
 
     def exec_args(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         args = userargs[4:]
         if args:
             args[0] = os.path.basename(args[0])
@@ -388,6 +426,7 @@ class IpNetnsExecFilter(ChainingFilter):
 
 
 class ChainingRegExpFilter(ChainingFilter):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Command filter doing regexp matching for prefix commands.
 
     Remaining arguments are filtered again. This means that the command
@@ -395,6 +434,7 @@ class ChainingRegExpFilter(ChainingFilter):
     """
 
     def match(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         # Early skip if number of args is smaller than the filter
         if (not userargs or len(self.args) > len(userargs)):
             return False
@@ -411,6 +451,7 @@ class ChainingRegExpFilter(ChainingFilter):
         return True
 
     def exec_args(self, userargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         args = userargs[len(self.args):]
         if args:
             args[0] = os.path.basename(args[0])

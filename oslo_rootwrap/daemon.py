@@ -32,6 +32,7 @@ from oslo_rootwrap import cmd
 from oslo_rootwrap import jsonrpc
 from oslo_rootwrap import subprocess
 from oslo_rootwrap import wrapper
+from oslo_rootwrap import log_utils
 
 LOG = logging.getLogger(__name__)
 
@@ -42,13 +43,16 @@ managers.listener_client['jsonrpc'] = jsonrpc.JsonListener, jsonrpc.JsonClient
 
 
 class RootwrapClass(object):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     def __init__(self, config, filters):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         self.config = config
         self.filters = filters
         self.reset_timer()
         self.prepare_timer(config)
 
     def run_one_command(self, userargs, stdin=None):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         self.reset_timer()
         try:
             obj = wrapper.start_subprocess(
@@ -79,10 +83,12 @@ class RootwrapClass(object):
 
     @classmethod
     def reset_timer(cls):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         cls.last_called = time.time()
 
     @classmethod
     def cancel_timer(cls):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         try:
             cls.timeout.cancel()
         except RuntimeError:
@@ -90,6 +96,7 @@ class RootwrapClass(object):
 
     @classmethod
     def prepare_timer(cls, config=None):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         if config is not None:
             cls.daemon_timeout = config.daemon_timeout
         # Wait a bit longer to avoid rounding errors
@@ -104,6 +111,7 @@ class RootwrapClass(object):
 
     @classmethod
     def handle_timeout(cls):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         if cls.last_called < time.time() - cls.daemon_timeout:
             cls.shutdown()
 
@@ -111,13 +119,19 @@ class RootwrapClass(object):
 
     @staticmethod
     def shutdown():
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         # Suicide to force break of the main thread
         os.kill(os.getpid(), signal.SIGINT)
 
 
 def get_manager_class(config=None, filters=None):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     class RootwrapManager(managers.BaseManager):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         def __init__(self, address=None, authkey=None):
+            LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
+            log_utils.log_message("initializing RootwrapManager")
+
             # Force jsonrpc because neither pickle nor xmlrpclib is secure
             super(RootwrapManager, self).__init__(address, authkey,
                                                   serializer='jsonrpc')
@@ -132,6 +146,7 @@ def get_manager_class(config=None, filters=None):
 
 
 def daemon_start(config, filters):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     temp_dir = tempfile.mkdtemp(prefix='rootwrap-')
     LOG.debug("Created temporary directory %s", temp_dir)
     try:
@@ -193,6 +208,7 @@ def daemon_start(config, filters):
 
 
 def daemon_stop(server, signal, frame):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     LOG.info("Got signal %s. Shutting down server", signal)
     # Signals are caught in the main thread which means this handler will run
     # in the middle of serve_forever() loop. It will catch this exception and

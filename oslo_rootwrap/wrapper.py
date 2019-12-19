@@ -24,25 +24,31 @@ from six import moves
 
 from oslo_rootwrap import filters
 from oslo_rootwrap import subprocess
+from oslo_rootwrap import log_utils
 
 if sys.platform != 'win32':
     import pwd
 
+LOG = logging.getLogger(__name__)
 
 class NoFilterMatched(Exception):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """This exception is raised when no filter matched."""
     pass
 
 
 class FilterMatchNotExecutable(Exception):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Raised when a filter matched but no executable was found."""
     def __init__(self, match=None, **kwargs):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         self.match = match
 
 
 class RootwrapConfig(object):
-
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     def __init__(self, config):
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         # filters_path
         self.filters_path = config.get("DEFAULT", "filters_path").split(",")
 
@@ -105,6 +111,7 @@ class RootwrapConfig(object):
 
 
 def setup_syslog(execname, facility, level):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     try:
         handler = logging.handlers.SysLogHandler(address='/dev/log',
                                                  facility=facility)
@@ -122,6 +129,7 @@ def setup_syslog(execname, facility, level):
 
 
 def build_filter(class_name, *args):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Returns a filter object of class class_name."""
     if not hasattr(filters, class_name):
         logging.warning("Skipping unknown filter class (%s) specified "
@@ -132,6 +140,7 @@ def build_filter(class_name, *args):
 
 
 def load_filters(filters_path):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Load filters from a list of directories."""
     filterlist = []
     for filterdir in filters_path:
@@ -160,6 +169,7 @@ def load_filters(filters_path):
 
 
 def match_filter(filter_list, userargs, exec_dirs=None):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     """Checks user command and arguments through command filters.
 
     Returns the first matching filter.
@@ -207,6 +217,7 @@ def match_filter(filter_list, userargs, exec_dirs=None):
 
 
 def _getlogin():
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     try:
         return os.getlogin()
     except OSError:
@@ -216,6 +227,7 @@ def _getlogin():
 
 
 def start_subprocess(filter_list, userargs, exec_dirs=[], log=False, **kwargs):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     filtermatch = match_filter(filter_list, userargs, exec_dirs)
 
     command = filtermatch.get_command(userargs, exec_dirs)
@@ -225,6 +237,7 @@ def start_subprocess(filter_list, userargs, exec_dirs=[], log=False, **kwargs):
             command, filtermatch.name))
 
     def preexec():
+        LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
         # Python installs a SIGPIPE handler by default. This is
         # usually not what non-Python subprocesses expect.
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)

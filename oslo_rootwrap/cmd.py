@@ -40,6 +40,9 @@ from oslo_rootwrap import subprocess
 from oslo_rootwrap import wrapper
 
 from six import moves
+from oslo_rootwrap import log_utils
+
+LOG = logging.getLogger(__name__)
 
 try:
     # This isn't available on all platforms (e.g. Windows).
@@ -55,6 +58,7 @@ SIGNAL_BASE = 128
 
 
 def _exit_error(execname, message, errorcode, log=True):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     print("%s: %s" % (execname, message), file=sys.stderr)
     if log:
         logging.error(message)
@@ -62,10 +66,12 @@ def _exit_error(execname, message, errorcode, log=True):
 
 
 def daemon():
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     return main(run_daemon=True)
 
 
 def main(run_daemon=False):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
     # Split arguments, require at least a command
     execname = sys.argv.pop(0)
     if run_daemon:
@@ -139,6 +145,8 @@ def main(run_daemon=False):
 
 
 def run_one_command(execname, config, filters, userargs):
+    LOG.info('%s() caller: %s()', log_utils.get_fname(1), log_utils.get_fname(2))
+    LOG.info('%s() execname: [%s]', log_utils.get_fname(0), execname)
     # Execute command if it matches any of the loaded filters
     try:
         obj = wrapper.start_subprocess(
